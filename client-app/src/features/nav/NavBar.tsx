@@ -10,8 +10,7 @@ const NavBar : React.FC = () => {
         <Menu fixed='top' inverted>
             <Container>
                 <Menu.Item header as={NavLink} exact to='/'>
-                    <img src="/assets/logo.png" alt="logo" style={{marginRight:30}}/>
-                    Reactivities
+                    <img src="/assets/logo.png" alt="logo" style={{marginRight:900}}/>
                 </Menu.Item>
                 <Menu.Item name='Activities' as={NavLink} to='/activities'/>
                 <Menu.Item>
