@@ -52,7 +52,6 @@ configure({enforceActions:'always'});
                 });
                 this.loadingInitial = false;
             })
-            console.log(this.groupActivitiesByDate(activities));
         }
         catch(error){
             runInAction(() => {                
@@ -82,6 +81,7 @@ configure({enforceActions:'always'});
                 runInAction(() =>{
                     this.loadingInitial = false;
                 })
+                console.log(error);
             }
         }
     }
