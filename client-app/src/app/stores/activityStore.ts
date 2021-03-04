@@ -58,9 +58,10 @@ import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signal
           })
         })
 
-        // this.hubConnection.on('Send', message => {
-        //     toast.info(message);
-        // })
+        this.hubConnection.on('Send', message => {
+            // toast.info(message);
+            console.log(message)
+        })
       };
     
       @action stopHubConnection = () => {
