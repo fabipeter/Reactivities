@@ -5,12 +5,12 @@ import { IActivitiesEnvelope, IActivity} from '../models/activity';
 import { IPhoto, IProfile } from '../models/Profile';
 import { IUser, IUserFormValues } from '../models/user';
 
-axios.defaults.baseURL = 'http://localhost:5000/api';
+axios.defaults.baseURL = process.env.REACT_APP_API_URL;
 
-axios.interceptors.request.use((config) => {
+axios.interceptors.request.use( config => {
     const token = window.localStorage.getItem('jwt');
     if(token) config.headers.Authorization = `Bearer ${token}`;
-    return config  
+    return config;  
 }, error =>{
     return Promise.reject(error);
 })
@@ -20,11 +20,19 @@ axios.interceptors.response.use(undefined, error => {
     {
         toast.error('Network error - make sure API is running!')
     }
-    const {status, data, config} = error.response;
+    const {status, data, config, headers} = error.response;
+    const headerContent : string = `${headers['www-authenticate']}`;
     if(status === 404)
     {
         history.push('/notfound');
     }
+    if (status === 401 && headerContent.includes('Bearer error="invalid_token", error_description='))
+     {
+        // console.log(headerContent)
+        window.localStorage.removeItem('jwt');
+        history.push('/')
+        toast.info('Your session has expired, please login again')
+      }
     if(status === 400 && config.method === 'get' && data.errors.hasOwnProperty('id'))
     {
         history.push('/notfound')
@@ -36,15 +44,12 @@ axios.interceptors.response.use(undefined, error => {
     throw error.response;
 })
 
-const responseBody = (response : AxiosResponse) => response.data;
-
-const sleep = (ms:number) => (response: AxiosResponse) => 
-new Promise<AxiosResponse>(resolve => setTimeout(() => resolve(response), ms));
+const responseBody = (response : AxiosResponse) => response.data
 
 const requests = {
     get: (url: string) => axios.get(url).then(responseBody),
-    post: (url: string, body: {}) => axios.post(url, body).then(sleep(1000)).then(responseBody),
-    put: (url: string, body: {}) => axios.put(url, body).then(sleep(1000)).then(responseBody),
+    post: (url: string, body: {}) => axios.post(url, body).then(responseBody),
+    put: (url: string, body: {}) => axios.put(url, body).then(responseBody),
     del: (url: string) => axios.delete(url).then(responseBody),
     postForm: (url:string, file:Blob) =>{
         let formData = new FormData();
@@ -57,7 +62,7 @@ const requests = {
 
 const Activities = {
     list: (params: URLSearchParams): Promise<IActivitiesEnvelope> =>
-    axios.get('/activities', {params: params}).then(sleep(1000)).then(responseBody),
+    axios.get('/activities', {params: params}).then(responseBody),
     details: (id: string) => requests.get(`/activities/${id}`),
     create: (activity : IActivity) => requests.post('/activities', activity),
     update: (activity: IActivity) => requests.put(`/activities/${activity.id}`, activity),
