@@ -1,74 +1,69 @@
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 import agent from "../api/agent";
-import { IUser, IUserFormValues } from "../models/user";
-import { RootStore } from "./rootStore";
-import {history} from '../..'
-
+import { User, UserFormValues } from "../models/user";
+import { router } from "../router/Routes";
+import { store } from "./store";
 
 export default class UserStore {
+    user: User | null = null;
 
-    rootStore:RootStore;
+    constructor() {
+        makeAutoObservable(this)
+    }
 
-     
-    constructor(rootStore: RootStore) {
-        // update mobx lite to read observables
-       makeObservable(this);
-       
-       this.rootStore = rootStore
-       
-     }
+    get isLoggedIn() {
+        return !!this.user;
+    }
 
-    @observable user: IUser | null = null;
-
-    @computed get isLoggedIn(){return !!this.user}
-
-    @action login = async (values: IUserFormValues) => 
-    {
-        try
-        {
-            const user = await agent.User.login(values)
-            runInAction(() =>{
-                this.user = user;
-            })
-            
-            this.rootStore.commonStore.setToken(user.token)
-            this.rootStore.modalStore.closeModal();
-            history.push('/activities')
-        }
-        catch(error)
-        {
+    login = async (creds: UserFormValues) => {
+        try {
+            const user = await agent.Account.login(creds);
+            store.commonStore.setToken(user.token);
+            runInAction(() => this.user = user);
+            router.navigate('/activities');
+            store.modalStore.closeModal();
+        } catch (error) {
             throw error;
         }
     }
 
-    @action register = async (values: IUserFormValues) => {
-      try {
-        const user = await agent.User.register(values);
-        this.rootStore.commonStore.setToken(user.token);
-        this.rootStore.modalStore.closeModal();
-        history.push('/activities')
-      } catch (error) {
-        throw error;
-      }
-    }
-
-    
-    @action getUser = async () => {
+    register = async (creds: UserFormValues) => {
         try {
-          const user = await agent.User.current();
-          runInAction(() => {
-            this.user = user;
-          });
+            const user = await agent.Account.register(creds);
+            store.commonStore.setToken(user.token);
+            runInAction(() => this.user = user);
+            router.navigate('/activities');
+            store.modalStore.closeModal();
         } catch (error) {
-          console.log(error);
+            throw error;
         }
-      };
-    
-
-    @action logout = () => {
-        this.rootStore.commonStore.setToken(null);
-        this.user = null;
-        history.push('/');
-      }; 
-
     }
+
+
+    logout = () => {
+        store.commonStore.setToken(null);
+        this.user = null;
+        router.navigate('/');
+    }
+
+    getUser = async () => {
+        try {
+            const user = await agent.Account.current();
+            runInAction(() => this.user = user);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    setImage = (image: string) => {
+        if (this.user) this.user.image = image;
+    }
+
+    setUserPhoto = (url: string) => {
+        if (this.user) this.user.image = url;
+    }
+
+    setDisplayName = (name: string) => {
+        if (this.user) this.user.displayName = name;
+    }
+}

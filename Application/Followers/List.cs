@@ -1,9 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Application.Profiles;
-using Domain;
+using Application.Core;
+using Application.Interfaces;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
@@ -12,61 +10,49 @@ namespace Application.Followers
 {
     public class List
     {
-        public class Query : IRequest<List<Profile>>
+        public class Query : IRequest<Result<List<Profiles.Profile>>>
         {
-            public string Username { get; set; }
             public string Predicate { get; set; }
+            public string Username { get; set; }
         }
 
-        public class Handler : IRequestHandler<Query, List<Profile>>
+        public class Handler : IRequestHandler<Query, Result<List<Profiles.Profile>>>
         {
             private readonly DataContext _context;
-            private readonly IProfileReader _profileReader;
-            public Handler(DataContext context, IProfileReader profileReader)
-            {
-                _profileReader = profileReader;
-                _context = context;
 
+            private readonly IMapper _mapper;
+            private readonly IUserAccessor _userAccessor;
+
+            public Handler(DataContext context, IMapper mapper, IUserAccessor userAccessor)
+            {
+                _userAccessor = userAccessor;
+                _context = context;
+                _mapper = mapper;
             }
 
-            public async Task<List<Profile>> Handle(Query request, CancellationToken cancellationToken)
+            public async Task<Result<List<Profiles.Profile>>> Handle(Query request, CancellationToken cancellationToken)
             {
-                var queryable = _context.Followings.AsQueryable();
+                var profiles = new List<Profiles.Profile>();
 
-                var userFollowings = new List<UserFollowing>();
-
-                var profiles = new List<Profile>();
-
-                switch(request.Predicate)
+                switch (request.Predicate)
                 {
                     case "followers":
-                    {
-                        userFollowings = await queryable.Where(x => x.Target.UserName == 
-                            request.Username).ToListAsync();
-
-                        foreach(var follower in userFollowings)
-                        {
-                            profiles.Add(await _profileReader.ReadProfile(follower.Observer.UserName));
-                        }
+                        profiles = await _context.UserFollowings.Where(x => x.Target.UserName == request.Username)
+                            .Select(u => u.Observer)
+                            .ProjectTo<Profiles.Profile>(_mapper.ConfigurationProvider, 
+                                new {currentUsername = _userAccessor.GetUsername()})
+                            .ToListAsync();
                         break;
-                    }
-
-
                     case "following":
-                    {
-                        userFollowings = await queryable.Where(x => x.Observer.UserName == 
-                            request.Username).ToListAsync();
-
-                        foreach(var follower in userFollowings)
-                        {
-                            profiles.Add(await _profileReader.ReadProfile(follower.Target.UserName));
-                        }
+                        profiles = await _context.UserFollowings.Where(x => x.Observer.UserName == request.Username)
+                            .Select(u => u.Target)
+                            .ProjectTo<Profiles.Profile>(_mapper.ConfigurationProvider, 
+                                new {currentUsername = _userAccessor.GetUsername()})
+                            .ToListAsync();
                         break;
-                    }
                 }
 
-                return profiles;
-               
+                return Result<List<Profiles.Profile>>.Success(profiles);
             }
         }
     }

@@ -1,9 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Threading;
 using System.Threading.Tasks;
-using Application.Errors;
+using Application.Core;
 using Application.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -13,42 +12,42 @@ namespace Application.Photos
 {
     public class SetMain
     {
-        public class Command : IRequest
+        public class Command : IRequest<Result<Unit>>
         {
             public string Id { get; set; }
-
         }
 
-        public class Handler : IRequestHandler<Command>
+        public class Handler : IRequestHandler<Command, Result<Unit>>
         {
             private readonly DataContext _context;
             private readonly IUserAccessor _userAccessor;
+
             public Handler(DataContext context, IUserAccessor userAccessor)
             {
                 _userAccessor = userAccessor;
                 _context = context;
             }
 
-            public async Task<Unit> Handle(Command request, CancellationToken cancellationToken)
+            public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
             {
-                var user = await _context.Users.SingleOrDefaultAsync(x => x.UserName ==
-                _userAccessor.GetCurrentUsername());
+                var user = await _context.Users
+                    .Include(p => p.Photos)
+                    .FirstOrDefaultAsync(x => x.UserName == _userAccessor.GetUsername());
 
                 var photo = user.Photos.FirstOrDefault(x => x.Id == request.Id);
 
-                if(photo == null)
-                throw new RestException(HttpStatusCode.NotFound, new {Photo = "Not found"});
+                if (photo == null) return null;
 
                 var currentMain = user.Photos.FirstOrDefault(x => x.IsMain);
 
-                currentMain.IsMain = false;
-                photo.IsMain = true;
+                if (currentMain != null) currentMain.IsMain = false;
 
+                photo.IsMain = true;
                 var success = await _context.SaveChangesAsync() > 0;
 
-                if (success) return Unit.Value;
+                if (success) return Result<Unit>.Success(Unit.Value);
 
-                throw new Exception("Problem saving changes");
+                return Result<Unit>.Failure("Problem setting main photo");
             }
         }
     }

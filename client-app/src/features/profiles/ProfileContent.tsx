@@ -1,33 +1,33 @@
-import React from 'react'
-import { Tab } from 'semantic-ui-react'
-import ProfileActivities from './ProfileActivities'
-import ProfileDescription from './ProfileDescription'
-import ProfileFollowings from './ProfileFollowings'
-import ProfilePhotos from './ProfilePhotos'
+import { observer } from 'mobx-react-lite';
+import { Tab } from 'semantic-ui-react';
+import { Profile } from '../../app/models/profile';
+import { useStore } from '../../app/stores/store';
+import ProfileAbout from './ProfileAbout';
+import ProfileActivities from './ProfileActivities';
+import ProfileFollowings from './ProfileFollowings';
+import ProfilePhotos from './ProfilePhotos';
 
-
-interface IProps{
-    setActiveTab : (activeIndex: any) => void
+interface Props {
+    profile: Profile
 }
 
-const panes = [
-    {menuItem: 'About', render:() => <ProfileDescription/>},
-    {menuItem: 'Photos', render:() => <ProfilePhotos/>},
-    {menuItem: 'Activities', render:() => <ProfileActivities/>},
-    {menuItem: 'Followers', render:() => <ProfileFollowings/>},
-    {menuItem: 'Following', render:() => <ProfileFollowings/>}
-]
+export default observer(function ProfileContent({ profile }: Props) {
+    const {profileStore} = useStore();
 
-const ProfileContent : React.FC<IProps> = ({setActiveTab}) => {
+    const panes = [
+        { menuItem: 'About', render: () => <ProfileAbout /> },
+        { menuItem: 'Photos', render: () => <ProfilePhotos profile={profile} /> },
+        { menuItem: 'Events', render: () => <ProfileActivities /> },
+        { menuItem: 'Followers', render: () => <ProfileFollowings /> },
+        { menuItem: 'Following', render: () => <ProfileFollowings /> },
+    ];
+
     return (
-        <Tab 
-        menu={{fluid:true, vertical: true}}
-        menuPosition='right'
-        panes={panes}
-        onTabChange={(e,data) => setActiveTab(data.activeIndex)}
-        >            
-        </Tab>
+        <Tab
+            menu={{ fluid: true, vertical: true }}
+            menuPosition='right'
+            panes={panes}
+            onTabChange={(e, data) => profileStore.setActiveTab(data.activeIndex)}
+        />
     )
-}
-
-export default ProfileContent
+})

@@ -1,35 +1,35 @@
-import {RootStore} from './rootStore';
-import { observable, action, reaction, makeObservable } from 'mobx';
+import { makeAutoObservable, reaction } from "mobx";
+import { ServerError } from "../models/serverError";
 
 export default class CommonStore {
-    rootStore: RootStore;
-    constructor(rootStore: RootStore) {
-
-        makeObservable(this);
-        this.rootStore = rootStore;
+    error: ServerError | null = null;
+    token: string | null = localStorage.getItem('jwt');
+    appLoaded = false;
+    
+    constructor() {
+        makeAutoObservable(this);
 
         reaction(
             () => this.token,
             token => {
                 if (token) {
-                    window.localStorage.setItem('jwt', token);
+                    localStorage.setItem('jwt', token)
                 } else {
-                    window.localStorage.removeItem('jwt')
+                    localStorage.removeItem('jwt')
                 }
             }
         )
-
-        
     }
 
-    @observable token: string | null = window.localStorage.getItem('jwt');
-    @observable appLoaded = false;
+    setServerError(error: ServerError) {
+        this.error = error;
+    }
 
-    @action setToken = (token: string | null) => {
+    setToken = (token: string | null) => {
         this.token = token;
     }
 
-    @action setAppLoaded = () => {
+    setAppLoaded = () => {
         this.appLoaded = true;
     }
 }

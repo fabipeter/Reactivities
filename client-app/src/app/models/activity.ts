@@ -1,62 +1,47 @@
-export interface IActivitiesEnvelope{
-    activities : IActivity[];
-    activityCount: number;
-}
+import { Profile } from "./profile";
 
-
-export interface IActivity {
+export interface Activity {
     id: string;
     title: string;
     description: string;
     category: string;
-    date: Date;
+    date: Date | null;
     city: string;
-    venue: string;    
-    isGoing:boolean;
-    isHost:boolean;
-    attendees: IAttendee[];
-    comments : IComment[];
+    venue: string;
+    hostUsername?: string;
+    isCancelled?: boolean;
+    isGoing?: boolean;
+    isHost?: boolean
+    attendees: Profile[]
+    host?: Profile;
 }
 
-export interface IComment{
-    id: string;
-    createdAt: Date;
-    body : string;
-    username : string;
-    displayName : string;
-    image : string;
-}
-
-
-export interface IActivityFormValues extends Partial<IActivity>{
-    time?:Date
-}
-
-
-export class ActivityFormValues implements IActivityFormValues {
+export class ActivityFormValues
+  {
     id?: string = undefined;
     title: string = '';
     category: string = '';
     description: string = '';
-    date?: Date = undefined;
-    time?: Date = undefined;
+    date: Date | null = null;
     city: string = '';
     venue: string = '';
 
-    constructor(init?: IActivityFormValues) {
-        if (init && init.date) {
-            init.time = init.date;
-        }  
-        Object.assign(this, init);
+	  constructor(activity?: ActivityFormValues) {
+      if (activity) {
+        this.id = activity.id;
+        this.title = activity.title;
+        this.category = activity.category;
+        this.description = activity.description;
+        this.date = activity.date;
+        this.venue = activity.venue;
+        this.city = activity.city;
+      }
     }
-}
 
+  }
 
-
-export interface IAttendee{
-    username:string;
-    displayName:string;
-    image:string;
-    isHost:boolean;
-    following?:boolean;
-}
+  export class Activity implements Activity {
+    constructor(init?: ActivityFormValues) {
+      Object.assign(this, init);
+    }
+  }

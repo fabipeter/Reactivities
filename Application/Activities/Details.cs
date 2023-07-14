@@ -1,9 +1,7 @@
-using System;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using Application.Errors;
+using Application.Core;
+using Application.Interfaces;
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -13,35 +11,33 @@ namespace Application.Activities
 {
     public class Details
     {
-        public class Query : IRequest<ActivityDto>
+        public class Query : IRequest<Result<ActivityDto>>
         {
             public Guid Id { get; set; }
-
         }
 
-        public class Handler : IRequestHandler<Query, ActivityDto>
+        public class Handler : IRequestHandler<Query, Result<ActivityDto>>
         {
             private readonly DataContext _context;
             private readonly IMapper _mapper;
-            public Handler(DataContext context, IMapper mapper)
+            private readonly IUserAccessor _userAccessor;
+
+            public Handler(DataContext context, IMapper mapper, IUserAccessor userAccessor)
             {
+                _userAccessor = userAccessor;
                 _mapper = mapper;
                 _context = context;
             }
 
-            public async Task<ActivityDto> Handle(Query request, CancellationToken cancellationToken)
+            public async Task<Result<ActivityDto>> Handle(Query request, CancellationToken cancellationToken)
             {
-
-
                 var activity = await _context.Activities
-                .FindAsync(request.Id);
+                    .ProjectTo<ActivityDto>(_mapper.ConfigurationProvider, new{currentUsername = _userAccessor.GetUsername()})
+                    .FirstOrDefaultAsync(x => x.Id == request.Id);
 
-                if (activity == null)
-                    throw new RestException(HttpStatusCode.NotFound, new { activity = "Not Found" });
-
-                var activityToReturn = _mapper.Map<Activity, ActivityDto>(activity);
-                return activityToReturn;
+                return Result<ActivityDto>.Success(activity);
             }
         }
     }
 }
+

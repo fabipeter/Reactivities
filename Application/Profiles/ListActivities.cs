@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using Application.Errors;
+using Application.Core;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
@@ -13,62 +9,42 @@ namespace Application.Profiles
 {
     public class ListActivities
     {
-        public class Query : IRequest<List<UserActivityDto>>
+        public class Query : IRequest<Result<List<UserActivityDto>>>
         {
             public string Username { get; set; }
             public string Predicate { get; set; }
         }
 
-        public class Handler : IRequestHandler<Query, List<UserActivityDto>>
+        public class Handler : IRequestHandler<Query, Result<List<UserActivityDto>>>
         {
             private readonly DataContext _context;
-            public Handler(DataContext context)
+            private readonly IMapper _mapper;
+            public Handler(DataContext context, IMapper mapper)
             {
+                _mapper = mapper;
                 _context = context;
             }
 
-            public async Task<List<UserActivityDto>> Handle(Query request,
-                CancellationToken cancellationToken)
+            public async Task<Result<List<UserActivityDto>>> Handle(Query request, CancellationToken cancellationToken)
             {
-                var user = await _context.Users.SingleOrDefaultAsync(x => x.UserName == request.Username);
-
-                if (user == null)
-                    throw new RestException(HttpStatusCode.NotFound, new { User = "Not found" });
-
-                var queryable = user.UserActivities
+                var query = _context.ActivityAttendees
+                    .Where(u => u.AppUser.UserName == request.Username)
                     .OrderBy(a => a.Activity.Date)
+                    .ProjectTo<UserActivityDto>(_mapper.ConfigurationProvider)
                     .AsQueryable();
+                
+                var today = DateTime.UtcNow;
 
-                switch (request.Predicate)
+                query = request.Predicate switch
                 {
-                    case "past":
-                        queryable = queryable.Where(a => a.Activity.Date <= DateTime.Now);
-                        break;
-                    case "hosting":
-                        queryable = queryable.Where(a => a.IsHost);
-                        break;
-                    default:
-                        queryable = queryable.Where(a => a.Activity.Date >= DateTime.Now);
-                        break;
-                }
+                    "past" => query.Where(a => a.Date <= today),
+                    "hosting" => query.Where(a => a.HostUsername == request.Username),
+                    _ => query.Where(a => a.Date >= today)
+                };
 
-                var activities = queryable.ToList();
-                var activitiesToReturn = new List<UserActivityDto>();
+                var activities = await query.ToListAsync();
 
-                foreach (var activity in activities)
-                {
-                    var userActivity = new UserActivityDto
-                    {
-                        Id = activity.Activity.Id,
-                        Title = activity.Activity.Title,
-                        Category = activity.Activity.Category,
-                        Date = activity.Activity.Date
-                    };
-
-                    activitiesToReturn.Add(userActivity);
-                }
-
-                return activitiesToReturn;
+                return Result<List<UserActivityDto>>.Success(activities);
             }
         }
     }

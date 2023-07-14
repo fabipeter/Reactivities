@@ -1,53 +1,48 @@
-import React from 'react';
-import { Form as FinalForm, Field } from 'react-final-form';
-import { observer } from 'mobx-react-lite';
-import { combineValidators, isRequired } from 'revalidate';
-import { Form, Button } from 'semantic-ui-react';
-import TextInput from '../../app/common/form/TextInput';
-import TextAreaInput from '../../app/common/form/TextAreaInput';
-import { IProfile } from '../../app/models/Profile';
+import { Form, Formik } from "formik";
+import { observer } from "mobx-react-lite";
+import { Button } from "semantic-ui-react";
+import MyTextArea from "../../app/common/form/MyTextArea";
+import MyTextInput from "../../app/common/form/MyTextInput";
+import { useStore } from "../../app/stores/store";
+import * as Yup from 'yup';
 
-const validate = combineValidators({
-  displayName: isRequired('displayName')
-});
-
-interface IProps {
-  updateProfile: (profile: Partial<IProfile>) => void;
-  profile: IProfile;
+interface Props {
+    setEditMode: (editMode: boolean) => void;
 }
 
-const ProfileEditForm: React.FC<IProps> = ({ updateProfile, profile }) => {
-  return (
-    <FinalForm
-      onSubmit={updateProfile}
-      validate={validate}
-      initialValues={profile!}
-      render={({ handleSubmit, invalid, pristine, submitting }) => (
-        <Form onSubmit={handleSubmit} error>
-          <Field
-            name='displayName'
-            component={TextInput}
-            placeholder='Display Name'
-            value={profile!.displayName}
-          />
-          <Field
-            name='bio'
-            component={TextAreaInput}
-            rows={3}
-            placeholder='Bio'
-            value={profile!.bio}
-          />
-          <Button 
-            loading={submitting}
-            floated='right'
-            disabled={invalid || pristine}
-            positive
-            content='Update profile'
-          />
-        </Form>
-      )}
-    />
-  );
-};
-
-export default observer(ProfileEditForm);
+export default observer(function ProfileEditForm({ setEditMode }: Props) {
+    const { profileStore: { profile, updateProfile } } = useStore();
+    return (
+        <Formik
+            initialValues={{
+                displayName: profile?.displayName, 
+                bio: profile?.bio || ''
+            }}
+            onSubmit={values => {
+                updateProfile(values).then(() => {
+                    setEditMode(false);
+                })
+            }}
+            validationSchema={Yup.object({
+                displayName: Yup.string().required()
+            })} >
+            {({ isSubmitting, isValid, dirty }) => (
+                <Form className='ui form'>
+                    <MyTextInput 
+                        placeholder='Display Name'
+                        name='displayName' 
+                    />
+                    <MyTextArea rows={3} placeholder='Add your bio' name='bio' />
+                    <Button
+                        positive
+                        type='submit'
+                        loading={isSubmitting}
+                        content='Update profile'
+                        floated='right'
+                        disabled={!isValid || !dirty}
+                    /> 
+                </Form>
+            )} 
+        </Formik>
+    )
+})

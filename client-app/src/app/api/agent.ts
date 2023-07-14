@@ -1,107 +1,117 @@
-import axios, { AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosResponse } from 'axios';
 import { toast } from 'react-toastify';
-import { history } from '../..';
-import { IActivitiesEnvelope, IActivity} from '../models/activity';
-import { IPhoto, IProfile } from '../models/Profile';
-import { IUser, IUserFormValues } from '../models/user';
+import { Activity, ActivityFormValues } from '../models/activity';
+import { PaginatedResult } from '../models/pagination';
+import { Photo, Profile, UserActivity } from '../models/profile';
+import { User, UserFormValues } from '../models/user';
+import { router } from '../router/Routes';
+import { store } from '../stores/store';
+
+const sleep = (delay: number) => {
+    return new Promise((resolve) => {
+        setTimeout(resolve, delay);
+    })
+}
 
 axios.defaults.baseURL = process.env.REACT_APP_API_URL;
 
-axios.interceptors.request.use( config => {
-    const token = window.localStorage.getItem('jwt');
-    if(token) config.headers.Authorization = `Bearer ${token}`;
-    return config;  
-}, error =>{
+const responseBody = <T>(response: AxiosResponse<T>) => response.data;
+
+axios.interceptors.request.use(config => {
+    const token = store.commonStore.token;
+    if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+})
+
+axios.interceptors.response.use(async response => {
+    if (process.env.NODE_ENV === 'development') await sleep(1000);
+    const pagination = response.headers['pagination'];
+    if (pagination) {
+        response.data = new PaginatedResult(response.data, JSON.parse(pagination));
+        return response as AxiosResponse<PaginatedResult<any>>
+    }
+    return response;
+}, (error: AxiosError) => {
+    const { data, status, config } = error.response as AxiosResponse;
+    switch (status) {
+        case 400:
+            if (config.method === 'get' && data.errors.hasOwnProperty('id')) {
+                router.navigate('/not-found');
+            }
+            if (data.errors) {
+                const modalStateErrors = [];
+                for (const key in data.errors) {
+                    if (data.errors[key]) {
+                        modalStateErrors.push(data.errors[key])
+                    }
+                }
+                throw modalStateErrors.flat();
+            } else {
+                toast.error(data);
+            }
+            break;
+        case 401:
+            toast.error('unauthorised')
+            break;
+        case 403:
+            toast.error('forbidden')
+            break;
+        case 404:
+            router.navigate('/not-found');
+            break;
+        case 500:
+            store.commonStore.setServerError(data);
+            router.navigate('/server-error');
+            break;
+    }
     return Promise.reject(error);
 })
 
-axios.interceptors.response.use(undefined, error => {
-    if(error.message === 'Network Error' && !error.response)
-    {
-        toast.error('Network error - make sure API is running!')
-    }
-    const {status, data, config, headers} = error.response;
-    const headerContent : string = `${headers['www-authenticate']}`;
-    if(status === 404)
-    {
-        history.push('/notfound');
-    }
-    if (status === 401 && headerContent.includes('Bearer error="invalid_token", error_description='))
-     {
-        // console.log(headerContent)
-        window.localStorage.removeItem('jwt');
-        history.push('/')
-        toast.info('Your session has expired, please login again')
-      }
-    if(status === 400 && config.method === 'get' && data.errors.hasOwnProperty('id'))
-    {
-        history.push('/notfound')
-    }
-    if(status === 500)
-    {
-        toast.error('Server error - check the terminal for more info!')
-    }
-    throw error.response;
-})
-
-const responseBody = (response : AxiosResponse) => response.data
-
 const requests = {
-    get: (url: string) => axios.get(url).then(responseBody),
-    post: (url: string, body: {}) => axios.post(url, body).then(responseBody),
-    put: (url: string, body: {}) => axios.put(url, body).then(responseBody),
-    del: (url: string) => axios.delete(url).then(responseBody),
-    postForm: (url:string, file:Blob) =>{
-        let formData = new FormData();
-        formData.append('File', file);
-        return axios.post(url, formData, {
-            headers: {'Content-type':'multipart/form-data'}
-        }).then(responseBody)
-    }
-};
+    get: <T>(url: string) => axios.get<T>(url).then(responseBody),
+    post: <T>(url: string, body: {}) => axios.post<T>(url, body).then(responseBody),
+    put: <T>(url: string, body: {}) => axios.put<T>(url, body).then(responseBody),
+    del: <T>(url: string) => axios.delete<T>(url).then(responseBody)
+}
 
 const Activities = {
-    list: (params: URLSearchParams): Promise<IActivitiesEnvelope> =>
-    axios.get('/activities', {params: params}).then(responseBody),
-    details: (id: string) => requests.get(`/activities/${id}`),
-    create: (activity : IActivity) => requests.post('/activities', activity),
-    update: (activity: IActivity) => requests.put(`/activities/${activity.id}`, activity),
-    delete: (id: string) => requests.del(`/activities/${id}`),
-    attend:(id:string) => requests.post(`/activities/${id}/attend`,{}),
-    unattend:(id:string) => requests.del(`/activities/${id}/attend`)
-};
+    list: (params: URLSearchParams) => axios.get<PaginatedResult<Activity[]>>('/activities', { params })
+        .then(responseBody),
+    details: (id: string) => requests.get<Activity>(`/activities/${id}`),
+    create: (activity: ActivityFormValues) => requests.post<void>(`/activities`, activity),
+    update: (activity: ActivityFormValues) => requests.put<void>(`/activities/${activity.id}`, activity),
+    delete: (id: string) => requests.del<void>(`/activities/${id}`),
+    attend: (id: string) => requests.post<void>(`/activities/${id}/attend`, {})
+}
 
-const User = {
-    current: (): Promise<IUser> => requests.get('/user'),
-    login: (user: IUserFormValues): Promise<IUser> => requests.post(`/user/login`, user),
-    register: (user: IUserFormValues): Promise<IUser> => requests.post(`/user/register`, user),
-};
-
+const Account = {
+    current: () => requests.get<User>('account'),
+    login: (user: UserFormValues) => requests.post<User>('/account/login', user),
+    register: (user: UserFormValues) => requests.post<User>('/account/register', user)
+}
 
 const Profiles = {
-    get: (username: string): Promise<IProfile> => requests.get(`/profiles/${username}`),
-    uploadPhoto:(photo: Blob): Promise<IPhoto> => requests.postForm(`/photos`, photo),
-    setMainPhoto:(id: string) => requests.post(`/photos/${id}/setMain`, {}),
-    deletePhoto:(id: string) => requests.del(`/photos/${id}`),
-    updateProfile:(profile: Partial<IProfile>) => requests.put(`/profiles`, profile),
-    follow: (username:string) => requests.post(`/profiles/${username}/follow`,{}),
-    unfollow: (username: string) => requests.del(`/profiles/${username}/follow`),
-    listFollowings: (username: string, predicate: string) => requests.get(`/profiles/${username}/follow?predicate=${predicate}`),
+    get: (username: string) => requests.get<Profile>(`/profiles/${username}`),
+    uploadPhoto: (file: any) => {
+        let formData = new FormData();
+        formData.append('File', file);
+        return axios.post<Photo>('photos', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
+    },
+    setMainPhoto: (id: string) => axios.post(`/photos/${id}/setMain`, {}),
+    deletePhoto: (id: string) => axios.delete(`/photos/${id}`),
+    updateProfile: (profile: Partial<Profile>) => requests.put(`/profiles`, profile),
+    updateFollowing: (username: string) => requests.post(`/follow/${username}`, {}),
+    listFollowings: (username: string, predicate: string) => requests
+        .get<Profile[]>(`/follow/${username}?predicate=${predicate}`),
     listActivities: (username: string, predicate: string) =>
-    requests.get(`/profiles/${username}/activities?predicate=${predicate}`)
-};
-
-
-// export default {
-//     Activities,
-//     User,
-//     Profiles
-// };
-
+        requests.get<UserActivity[]>(`/profiles/${username}/activities?predicate=${predicate}`)
+}
 
 const agent = {
     Activities,
-    User,
+    Account,
     Profiles
 }
 
