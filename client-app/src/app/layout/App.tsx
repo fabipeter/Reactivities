@@ -8,11 +8,12 @@ import { useStore } from '../stores/store';
 import { useEffect } from 'react';
 import LoadingComponent from './LoadingComponent';
 import ModalContainer from '../common/modals/ModalContainer';
+import useMediaQuery from '../common/hooks/useMediaQuery';
 
 function App() {
   const location = useLocation();
   const { commonStore, userStore } = useStore();
-
+  const matches = useMediaQuery("(min-width: 767px)");
   useEffect(() => {
     if (commonStore.token) {
       userStore.getUser().finally(() => commonStore.setAppLoaded())
@@ -31,7 +32,7 @@ function App() {
       {location.pathname === '/' ? <HomePage /> : (
         <>
           <NavBar />
-          <Container style={{ marginTop: '7em' }}>
+          <Container style={{ marginTop: matches?'7em':"3em" }}>
             <Outlet />
           </Container>
         </>

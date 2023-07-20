@@ -11,7 +11,7 @@ export default observer(function ProfileAbout() {
 
     return (
         <Tab.Pane>
-            <Grid>
+            <Grid >
                 <Grid.Column width='16'>
                     <Header
                         floated='left'

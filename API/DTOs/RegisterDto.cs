@@ -16,6 +16,7 @@ namespace API.DTOs
         public string DisplayName { get; set; }
 
         [Required]
+        [RegularExpression(@"\w", ErrorMessage = "Username must not include white space")]
         public string Username { get; set; }
     }
 }

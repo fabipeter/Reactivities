@@ -22,7 +22,7 @@ export default observer(function ActivityDetails() {
     if (loadingInitial || !activity) return <LoadingComponent />
 
     return (
-        <Grid>
+        <Grid stackable>
             <Grid.Column width='10'>
                 <ActivityDetailedHeader activity={activity} />
                 <ActivityDetailedInfo activity={activity} />

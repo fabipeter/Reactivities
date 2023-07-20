@@ -1,0 +1,189 @@
+/* Navbar */
+.navWrapper {
+  background-image: linear-gradient(
+    135deg,
+    rgb(24, 42, 115) 0%,
+    rgb(33, 138, 174) 69%,
+    rgb(32, 167, 172) 89%
+  ) !important;
+}
+.nav {
+  height: 54px;
+  width: 100%;
+  /* background-color: #4d4d4d; */
+  position: relative;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.nav > .navheader {
+  display: inline;
+}
+
+.nav > .navheader > .navtitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  font-size: 18px;
+  color: #ffffff;
+  padding: 10px 10px 10px 10px;
+}
+.nav > .navheader > .navtitle * {
+  margin-left: 10px;
+  font-size: 14px;
+}
+.nav > .navheader > .navtitle .activities {
+  background: hsla(0, 0%, 100%, 0.15);
+  color: #fff !important;
+  padding: 1.2285714em;
+}
+.nav > .navheader > .navtitle svg {
+  height: 45px;
+}
+.nav > .navbtn {
+  display: none;
+}
+
+.nav > .navlinks {
+  display: inline;
+  /* float: right; */
+  font-size: 14px;
+  z-index: 1;
+}
+
+.nav > .navlinks > * {
+  display: inline-block;
+  padding: 13px 10px 13px 10px;
+  text-decoration: none;
+  color: #000000;
+}
+
+.nav > .navlinks > *:hover {
+  /* background-color: rgba(0, 0, 0, 0.3) !important; */
+}
+
+.nav > .navcheck {
+  display: none;
+}
+
+/* .positive {
+  background-color: #32c36c !important;
+  width: 100%;
+  height: 50px;
+} */
+
+.flexCenter {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.flexCenter > * {
+  margin-right: 5px;
+}
+
+.menu {
+}
+
+.menu div:hover {
+  color: #0a8000;
+}
+
+@media screen and (max-width: 767px) {
+  .page {
+    padding: 0px 10px !important;
+  }
+  .nav {
+    height: 45px;
+    width: 100%;
+    /* background-color: #4d4d4d; */
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .nav > .navheader > .navtitle {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    font-size: 22px;
+    color: #ffffff;
+    padding: 10px 10px 10px 10px;
+  }
+  .nav > .navheader > .navtitle svg {
+    height: 45px;
+  }
+  .nav > .navbtn {
+    display: inline-block;
+    /* position: absolute; */
+    right: 0px;
+    top: 0px;
+  }
+  .nav > .navbtn > label {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    padding: 13px;
+  }
+  .nav > .navbtn > label:hover,
+  .nav .navcheck:checked ~ .navbtn > label {
+    background-color: rgba(0, 0, 0, 0.3);
+  }
+  .nav > .navbtn > label > span {
+    display: block;
+    width: 25px;
+    height: 10px;
+    border-top: 2px solid #000000;
+  }
+  .nav > .navlinks {
+    position: absolute;
+    display: block;
+    width: 100%;
+    background-color: #fffbfb;
+    height: 0px;
+    transition: all 0.3s ease-in;
+    overflow-y: hidden;
+    top: 50px;
+    left: 0px;
+  }
+  .nav > .navlinks > * {
+    display: block;
+    width: 100%;
+  }
+  .nav > .navcheck ~ .navlinks {
+    height: 0px;
+  }
+  .nav > .navcheck.checked ~ .navlinks {
+    height: 250px;
+    overflow-y: auto;
+    background-image: linear-gradient(
+      135deg,
+      rgb(24, 42, 115) 0%,
+      rgb(33, 138, 174) 69%,
+      rgb(32, 167, 172) 89%
+    ) !important;
+   
+  }
+  .nav > .navcheck.checked ~ .navlinks > * {
+    color: #fff ;
+  }
+   /* .nav > .navcheck.checked ~ .navlinks > * :hover {
+    background-image: linear-gradient(
+      135deg,
+      rgb(24, 42, 115) 0%,
+      rgb(33, 138, 174) 69%,
+      rgb(32, 167, 172) 89%
+    ) !important;
+  } */
+
+  .activitiesButton:hover {
+    color:#0a8000 !important;
+  }
+  .flexCenter {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}

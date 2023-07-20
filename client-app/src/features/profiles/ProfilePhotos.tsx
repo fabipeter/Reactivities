@@ -32,7 +32,7 @@ export default observer(function ProfilePhotos({ profile }: Props) {
 
     return (
         <Tab.Pane>
-            <Grid>
+            <Grid >
                 <Grid.Column width='16'>
                     <Header floated='left' icon='image' content='Photos' />
                     {isCurrentUser && (

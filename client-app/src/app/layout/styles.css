@@ -43,6 +43,35 @@ body {
 
 /*end home page styles*/
 
+
+/* navbar styles */
+
+@media screen and (max-width: 800px) {
+  .navbarContainer{
+    justify-content: space-between !important;
+  }
+  .hamButtton{
+    background: transparent;
+    border: unset;
+    
+  }
+  .hamButtton svg{
+    fill: white;
+  }
+}
+
+
+
+/* end of navbar styles */
+
 .react-datepicker-wrapper {
   width: 100%;
+}
+
+
+
+@media screen and (max-width: 800px) {
+  .profileEventMenu{
+    display: block !important;
+  }
 }
